@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Potato Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --primary: #f39c12; --bg: #fffcf2; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 8px solid var(--primary); }
+        h2 { color: #d35400; text-align: center; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
+        label { font-weight: bold; display: block; margin-top: 15px; color: #444; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1.5px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+        .price-box { background: #fff9e6; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; color: #27ae60; font-size: 18px; margin: 15px 0; border: 1px dashed var(--primary); }
+        .btn { width: 100%; padding: 16px; background: var(--primary); border: none; color: white; font-size: 18px; font-weight: bold; border-radius: 10px; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3); }
+        .btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🥔 Golden Potato Shop</h2>
+    <p class="subtitle">Fresh potatoes delivered to your door</p>
+
+    <label>Choose Size</label>
+    <select id="orderSize" onchange="updatePrice()">
+        <option value="500g" data-price="5000">500 Grams (5000 MMK)</option>
+        <option value="200g" data-price="2000">200 Grams (2000 MMK)</option>
+    </select>
+
+    <div class="price-box" id="priceDisplay">Total: 5000 MMK</div>
+
+    <label>Customer Name</label>
+    <input type="text" id="name" placeholder="Enter your name">
+
+    <label>Phone Number</label>
+    <input type="tel" id="phone" placeholder="09xxxxxxxxx">
+
+    <label>Delivery Address</label>
+    <input type="text" id="address" placeholder="Street, Township, City">
+
+    <button class="btn" onclick="submitOrder()">Place Order Now</button>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.MainButton.hide();
+
+    // 1. YOUR KEYS (Keep these safe!)
+    const TELEGRAM_BOT_TOKEN = "8340352865:AAEGqiZQgtCeGUmhaqchD0jJRmc3q_vHO3s";
+    const YOUR_CHAT_ID = "1425918894"; // Get this from @userinfobot
+
+    function updatePrice() {
+        const select = document.getElementById('orderSize');
+        const price = select.options[select.selectedIndex].getAttribute('data-price');
+        document.getElementById('priceDisplay').innerText = `Total: ${price} MMK`;
+    }
+
+    async function submitOrder() {
+        const name = document.getElementById('name').value;
+        const phone = document.getElementById('phone').value;
+        const address = document.getElementById('address').value;
+        const size = document.getElementById('orderSize').value;
+        const price = document.getElementById('priceDisplay').innerText;
+
+        if (!name || !phone || !address) {
+            tg.showAlert("❌ Please fill in all fields!");
+            return;
+        }
+
+        tg.MainButton.setText("PROCESSING...").show();
+
+        // 2. THE MESSAGE LOGIC
+        const message = `🚨 *NEW POTATO ORDER* 🚨\n\n` +
+                        `👤 *Name:* ${name}\n` +
+                        `📞 *Phone:* ${phone}\n` +
+                        `📍 *Address:* ${address}\n` +
+                        `📦 *Order:* ${size}\n` +
+                        `💰 *Total:* ${price}`;
+
+        // 3. SEND DIRECTLY TO YOUR TELEGRAM VIA API
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        
+        try {
+            await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: YOUR_CHAT_ID, // This sends the order to YOU
+                    text: message,
+                    parse_mode: "Markdown"
+                })
+            });
+
+            tg.showAlert("✅ Order Received! We will call you soon.");
+            tg.close();
+        } catch (error) {
+            tg.showAlert("⚠️ Error sending order. Check connection.");
+            tg.MainButton.hide();
+        }
+    }
+</script>
+
+</body>
+</html>
